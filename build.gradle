@@ -1,0 +1,20 @@
+
+apply plugin: 'java-library'
+
+repositories {
+    jcenter()
+    mavenCentral()
+    maven {
+    	url  "https://jitpack.io"
+  	}
+}
+
+dependencies {
+	compile "com.github.austinv11:Discord4J:2.8.4"
+	compile 'com.sedmelluq:lavaplayer:1.2.42'
+	compile group: 'mysql', name: 'mysql-connector-java', version: '6.0.6'
+	compile 'com.google.apis:google-api-services-youtube:v3-rev183-1.22.0'
+	compile group: 'com.google.oauth-client', name: 'google-oauth-client-jetty', version: '1.22.0'
+	compile group: 'commons-validator', name: 'commons-validator', version: '1.6'
+}
+
