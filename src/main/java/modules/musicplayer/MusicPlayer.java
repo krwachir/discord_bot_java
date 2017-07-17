@@ -1,4 +1,4 @@
-package musicplayer;
+package modules.musicplayer;
 
 import com.sedmelluq.discord.lavaplayer.player.AudioLoadResultHandler;
 import com.sedmelluq.discord.lavaplayer.player.AudioPlayerManager;
@@ -8,14 +8,15 @@ import com.sedmelluq.discord.lavaplayer.tools.FriendlyException;
 import com.sedmelluq.discord.lavaplayer.track.AudioPlaylist;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
 
-import Main.Bot;
+import Main.BotUtils;
+import Main.CommandHandler;
+import modules.youtubeapi.Search;
 
-import org.apache.commons.validator.UrlValidator;
+import org.apache.commons.validator.routines.UrlValidator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import sx.blah.discord.api.ClientBuilder;
 import sx.blah.discord.api.IDiscordClient;
-import sx.blah.discord.api.events.EventSubscriber;
 import sx.blah.discord.handle.impl.events.guild.channel.message.MessageEvent;
 import sx.blah.discord.handle.obj.IChannel;
 import sx.blah.discord.handle.obj.IGuild;
@@ -24,13 +25,12 @@ import sx.blah.discord.handle.obj.IUser;
 import sx.blah.discord.handle.obj.IVoiceChannel;
 import sx.blah.discord.handle.obj.IVoiceState;
 import utils.PropertiesUtil;
-import youtubeapi.Search;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 
-@SuppressWarnings("deprecation")
 public class MusicPlayer {
 
 	private static final int INITIAL_VOL = 10;
@@ -47,8 +47,6 @@ public class MusicPlayer {
 	private final AudioPlayerManager playerManager;
 	private final Map<Long, GuildMusicManager> musicManagers;
 	private final Map<Long, TrackDetail> trackDetails;
-	
-	private IMessage lastestMessage;
 
 	public MusicPlayer() {
 		this.musicManagers = new HashMap<>();
@@ -56,6 +54,43 @@ public class MusicPlayer {
 		this.playerManager = new DefaultAudioPlayerManager();
 		AudioSourceManagers.registerRemoteSources(playerManager);
 		AudioSourceManagers.registerLocalSource(playerManager);
+
+		// Register music Commands
+		CommandHandler.commandMap.put("play", (event, args) -> {
+			play(event, args);
+		});
+
+		CommandHandler.commandMap.put("pause", (event, args) -> {
+			pause(event, args);
+		});
+
+		CommandHandler.commandMap.put("skip", (event, args) -> {
+			skip(event, args);
+		});
+
+		CommandHandler.commandMap.put("shuffle", (event, args) -> {
+			shuffle(event, args);
+		});
+
+		CommandHandler.commandMap.put("clearq", (event, args) -> {
+			clearQueue(event, args);
+		});
+
+		CommandHandler.commandMap.put("list", (event, args) -> {
+			printList(event, args);
+		});
+
+		CommandHandler.commandMap.put("ls", (event, args) -> {
+			printList(event, args);
+		});
+
+		CommandHandler.commandMap.put("vol", (event, args) -> {
+			setVolume(event, args);
+		});
+
+		CommandHandler.commandMap.put("set", (event, args) -> {
+			set(event, args);
+		});
 
 	}
 
@@ -84,124 +119,92 @@ public class MusicPlayer {
 		return musicManager;
 	}
 
-	@EventSubscriber
-	public void onMessageReceived(MessageEvent event) {
+	private boolean isMusicTxtChannelOK(IMessage message) {
+		IChannel music_txt_channel = getGuildMusicTxtChannel(message.getGuild());
+		if (music_txt_channel == null) {
+			BotUtils.sendMessage(message.getChannel(), ":x: `No designated text channel for music!\nPlease ask the owner or bot's creator to set with command:` ```/set music_txt_channel <channelName or channelID>```");
+			return false;
+		} else if (!music_txt_channel.getStringID().equals(message.getChannel().getStringID())) {
+			BotUtils.sendMessage(message.getChannel(), ":no_entry_sign: `Please use music commands in text channel: `" + music_txt_channel);
+			return false;
+		}
+		return true;
+	}
+	
+	private void play(MessageEvent event, List<String> args) {
 		IMessage message = event.getMessage();
-		
-		if (lastestMessage == message)
-			return;
-		
-		lastestMessage = message;
-
-		String[] command = message.getContent().split(" ", 2);
-		IGuild guild = message.getGuild();
-
-		if (guild != null) {
-
-			switch (command[0].trim().toLowerCase()) {
-			case "-play":
-				if (command.length == 2) {
-					UrlValidator defaultValidator = new UrlValidator(); // default schemes
-					if (!defaultValidator.isValid(command[1])) {
-						command[1] = Search.search(command[1]);
-					}
-
-					if (command[1] != null) {
-						TrackDetail trackDetail = new TrackDetail(message);
-						trackDetails.put(message.getLongID(), trackDetail);
-						loadAndPlay(trackDetail, command[1]);
-
-					}
-				}
-				
-				message.delete();
-				break;
-
-			case "-skip":
-				skipTrack(message.getChannel());
-				break;
-
-			case "-ls":
-			case "-list":
-				printList(message.getChannel());
-				break;
-
-			case "-vol":
-				setVolume(message.getChannel(), command[1]);
-				break;
-
-			case "-clearq":
-				clearQueue(message.getChannel());
-				break;
-
-			case "-set":
-				set(message, command);
-				break;
-				
-			case "-shuffle":
-				shuffle(message.getChannel());
-				break;
-
-			default:
-				break;
-			}
-
-		}
-	}
-
-	private void shuffle(IChannel channel) {
-		GuildMusicManager musicManager = getGuildAudioPlayer(channel.getGuild());
-		musicManager.scheduler.shuffle();
-		sendMessageToChannel(channel, "Playlist Shuffled!", "`");
-	}
-
-	private void set(IMessage message, String[] command) {
-		if (command.length != 2)
+		if (!isMusicTxtChannelOK(message))
 			return;
 
-		String[] commands = command[1].split(":");
-		if (commands.length != 2)
+		GuildMusicManager musicManager = getGuildAudioPlayer(message.getGuild());
+		if (musicManager.player.isPaused() && args.size() == 0) {
+			musicManager.player.setPaused(false);
+			sendMessageToChannel(message.getChannel(), "Resumed!", "`");
 			return;
-
-		IGuild guild = message.getGuild();
-		IUser requester = message.getAuthor();
-		IUser guildOwner = guild.getOwner();
-
-		if (requester.getStringID().equals(Main.Bot.CREATOR_ID)
-				|| requester.getStringID().equals(guildOwner.getStringID())) {
-			if (commands[0].trim().equals("null"))
-				PropertiesUtil.removeGuildProperty(guild, commands[0].trim());
-			else {
-				PropertiesUtil.setGuildProperty(guild, commands[0].trim(), commands[1].trim());
-			}
-
 		} else {
-			sendMessageToChannel(message.getChannel(), "You don't have this permission!", "`");
+			String inputTxt = message.getContent().substring(message.getContent().indexOf(" "), message.getContent().length()).trim();
+			UrlValidator defaultValidator = new UrlValidator(); // default schemes
+			if (!defaultValidator.isValid(inputTxt)) {
+				inputTxt = Search.search(inputTxt);
+			}
+			if (inputTxt != null) {
+				TrackDetail trackDetail = new TrackDetail(message);
+				trackDetails.put(message.getLongID(), trackDetail);
+				loadAndPlay(trackDetail, inputTxt);
+			}
+			message.delete();
 		}
+
 	}
 
-	private void clearQueue(IChannel channel) {
-		GuildMusicManager musicManager = getGuildAudioPlayer(channel.getGuild());
+	private void pause(MessageEvent event, List<String> args) {
+		IMessage message = event.getMessage();
+		if (!isMusicTxtChannelOK(message))
+			return;
+		
+		GuildMusicManager musicManager = getGuildAudioPlayer(message.getGuild());
+		musicManager.player.setPaused(true);
+		sendMessageToChannel(message.getChannel(), "Paused!", "`");
+	}
+
+	private void skip(MessageEvent event, List<String> args) {
+		IMessage message = event.getMessage();
+		if (!isMusicTxtChannelOK(message))
+			return;
+		
+		skipTrack(message.getChannel());
+	}
+
+	private void shuffle(MessageEvent event, List<String> args) {
+		IMessage message = event.getMessage();
+		if (!isMusicTxtChannelOK(message))
+			return;
+		
+		GuildMusicManager musicManager = getGuildAudioPlayer(message.getGuild());
+		musicManager.scheduler.shuffle();
+		sendMessageToChannel(message.getChannel(), "Playlist Shuffled!", "`");
+	}
+
+	private void clearQueue(MessageEvent event, List<String> args) {
+		IMessage message = event.getMessage();
+		if (!isMusicTxtChannelOK(message))
+			return;
+		
+		GuildMusicManager musicManager = getGuildAudioPlayer(message.getGuild());
 		musicManager.scheduler.clearQueue();
 
-		sendMessageToChannel(channel, "Queue Cleared!", "`");
+		sendMessageToChannel(message.getChannel(), "Queue Cleared!", "`");
 
 	}
 
-	private void setVolume(IChannel channel, String inputVolume) {
-		try {
-			int volPercent = Integer.parseInt(inputVolume);
-			GuildMusicManager musicManager = getGuildAudioPlayer(channel.getGuild());
-			musicManager.player.setVolume(MAX_ALLOWED_VOL * volPercent / 100);
-
-			sendMessageToChannel(channel, "Volume is set to " + volPercent + "%", "`");
-		} catch (Exception e) {
-		}
-	}
-	private void printList(IChannel channel) {
-		GuildMusicManager musicManager = getGuildAudioPlayer(channel.getGuild());
-		Queue<AudioTrack> AudioTracks = musicManager.scheduler.queue ;
-		sendMessageToChannel(channel, "In queue: " + AudioTracks.size() + " track(s)", "`");
+	private void printList(MessageEvent event, List<String> args) {
+		IMessage message = event.getMessage();
+		if (!isMusicTxtChannelOK(message))
+			return;
+		
+		GuildMusicManager musicManager = getGuildAudioPlayer(message.getGuild());
+		Queue<AudioTrack> AudioTracks = musicManager.scheduler.queue;
+		sendMessageToChannel(message.getChannel(), "In queue: " + AudioTracks.size() + " track(s)", "`");
 		try {
 			Thread.sleep(100);
 		} catch (InterruptedException e) {
@@ -215,15 +218,58 @@ public class MusicPlayer {
 			detailStr += "[" + (i) + "]" + "\t" + getStringTrackDetail(trackDetail);
 
 			if (i % 10 == 0) {
-				sendMessageToChannel(channel, detailStr, "`");
+				sendMessageToChannel(message.getChannel(), detailStr, "");
+				try {
+					Thread.sleep(100);
+				} catch (InterruptedException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+				detailStr = "\n";
 			} else {
 				detailStr += "\n";
 			}
 			i++;
 		}
 
-		sendMessageToChannel(channel, detailStr, "");
+		sendMessageToChannel(message.getChannel(), detailStr, "");
 
+	}
+
+	private void set(MessageEvent event, List<String> args) {
+		IMessage message = event.getMessage();
+		if (args.size() != 2)
+			return;
+
+		IGuild guild = message.getGuild();
+		IUser requester = message.getAuthor();
+		IUser guildOwner = guild.getOwner();
+
+		if (requester.getStringID().equals(Main.Bot.CREATOR_ID)
+				|| requester.getStringID().equals(guildOwner.getStringID())) {
+			if (args.get(0).trim().equals("null"))
+				PropertiesUtil.removeGuildProperty(guild, args.get(0).trim());
+			else {
+				PropertiesUtil.setGuildProperty(guild, args.get(0).trim(), args.get(1).trim());
+			}
+
+		} else {
+			sendMessageToChannel(message.getChannel(), "You don't have this permission!", "`");
+		}
+	}
+
+	private void setVolume(MessageEvent event, List<String> args) {
+		IMessage message = event.getMessage();
+		if (args.size() == 2) {
+			try {
+				int volPercent = Integer.parseInt(args.get(0).trim());
+				GuildMusicManager musicManager = getGuildAudioPlayer(message.getGuild());
+				musicManager.player.setVolume(MAX_ALLOWED_VOL * volPercent / 100);
+
+				sendMessageToChannel(message.getChannel(), "Volume is set to " + volPercent + "%", "`");
+			} catch (Exception e) {
+			}
+		}
 	}
 
 	public String getStringTrackDetail(TrackDetail trackDetail) {
@@ -239,17 +285,20 @@ public class MusicPlayer {
 		playerManager.loadItemOrdered(musicManager, trackUrl, new AudioLoadResultHandler() {
 			@Override
 			public void trackLoaded(AudioTrack track) {
-				sendMessageToChannel(trackDetail.getTxtChannel(), "Adding to queue " + track.getInfo().title + "\t by " + trackDetail.getGuild().getUserByID(trackDetail.requesterLongID), "");
+				sendMessageToChannel(trackDetail.getTxtChannel(), "Adding to queue " + track.getInfo().title + "\t by "
+						+ trackDetail.getGuild().getUserByID(trackDetail.requesterLongID), "");
 				play(trackDetail, musicManager, track);
 			}
 
 			@Override
 			public void playlistLoaded(AudioPlaylist playlist) {
-				
-				sendMessageToChannel(trackDetail.getTxtChannel(), "Adding to queue " + playlist.getTracks().size()
-						+ " track(s)\tfrom playlist: " + playlist.getName() + "\t by " + trackDetail.getGuild().getUserByID(trackDetail.requesterLongID), "");
-				
-				
+
+				sendMessageToChannel(trackDetail.getTxtChannel(),
+						"Adding to queue " + playlist.getTracks().size() + " track(s)\tfrom playlist: "
+								+ playlist.getName() + "\t by "
+								+ trackDetail.getGuild().getUserByID(trackDetail.requesterLongID),
+						"");
+
 				for (AudioTrack track : playlist.getTracks()) {
 					TrackDetail td = new TrackDetail(trackDetail.requesterMessage);
 					trackDetail.setTrack(track);

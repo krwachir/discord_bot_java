@@ -1,20 +1,19 @@
-package musicplayer;
+package modules.musicplayer;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Queue;
+import java.util.concurrent.LinkedBlockingQueue;
 
 import com.sedmelluq.discord.lavaplayer.player.AudioPlayer;
 import com.sedmelluq.discord.lavaplayer.player.event.AudioEventAdapter;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrackEndReason;
 
-import musicplayer.MusicPlayer.TrackDetail;
+import modules.musicplayer.MusicPlayer.TrackDetail;
 import sx.blah.discord.handle.obj.IChannel;
-
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.PriorityQueue;
-import java.util.Queue;
-import java.util.concurrent.LinkedBlockingQueue;
 
 /**
  * This class schedules tracks for the audio player. It contains the queue of
@@ -50,7 +49,6 @@ public class TrackScheduler extends AudioEventAdapter {
 		// player was already playing so this
 		// track goes to the queue instead.
 
-		
 		if (!player.startTrack(trackDetail.getTrack(), true)) {
 			queue.offer(trackDetail.getTrack());
 			trackDetails.put(trackDetail.getTrack(), trackDetail);
@@ -70,52 +68,58 @@ public class TrackScheduler extends AudioEventAdapter {
 		// player.
 		AudioTrack track = queue.poll();
 		player.startTrack(track, false);
-		
+
 		try {
 			currentTrackDetail = trackDetails.get(track);
-					trackDetails.remove(track);
+			trackDetails.remove(track);
 			showDetail(currentTrackDetail, true);
-		}catch (Exception e) {}
+		} catch (Exception e) {
+		}
 	}
 
 	private void showDetail(TrackDetail trackDetail, boolean sendMessage) {
 		try {
-			
 			IChannel txtChannel = MusicPlayer.getGuildMusicTxtChannel(trackDetail.getGuild());
 			if (txtChannel != null) {
 				txtChannel.changeTopic("Music playing > " + trackDetail.getTrack().getInfo().title);
 				// MusicPlayer.sendMessageToChannel(txtChannel,
 				// trackDetail.getTrack().getInfo().title, "'");
-			} else if (sendMessage){
-				MusicPlayer.sendMessageToChannel(trackDetail.getTxtChannel(),
-						trackDetail.getTrack().getInfo().title, "'");
+			} else if (sendMessage) {
+				MusicPlayer.sendMessageToChannel(trackDetail.getTxtChannel(), trackDetail.getTrack().getInfo().title,
+						"'");
 			}
-			
+
 		} catch (Exception e) {
 		}
 	}
 
 	@Override
-  public void onTrackEnd(AudioPlayer player, AudioTrack track, AudioTrackEndReason endReason) {
-    // Only start the next track if the end reason is suitable for it (FINISHED or LOAD_FAILED)
-	try {
-		currentTrackDetail.getTxtChannel().changeTopic("");
-	} catch (Exception e) {}
-    if (endReason.mayStartNext) {
-      nextTrack();
-    }
-  }
+	public void onTrackEnd(AudioPlayer player, AudioTrack track, AudioTrackEndReason endReason) {
+		// Only start the next track if the end reason is suitable for it (FINISHED or
+		// LOAD_FAILED)
+		try {
+
+			IChannel txtChannel = MusicPlayer.getGuildMusicTxtChannel(currentTrackDetail.getGuild());
+			if (txtChannel != null) {
+				txtChannel.changeTopic("");
+				// MusicPlayer.sendMessageToChannel(txtChannel,
+				// trackDetail.getTrack().getInfo().title, "'");
+
+			}
+		} catch (Exception e) {
+		}
+	}
 
 	public void clearQueue() {
 		queue.clear();
 		trackDetails.clear();
 	}
-	
+
 	public void shuffle() {
 		ArrayList<AudioTrack> trackList = new ArrayList<>();
 		trackList.addAll(queue);
 		queue.clear();
-		
+
 		Collections.shuffle(trackList);
 		for (AudioTrack track : trackList)
 			queue.offer(track);

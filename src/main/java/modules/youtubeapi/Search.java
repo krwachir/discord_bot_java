@@ -12,7 +12,7 @@
  * the License.
  */
 
-package youtubeapi;
+package modules.youtubeapi;
 
 import com.google.api.client.googleapis.json.GoogleJsonResponseException;
 import com.google.api.client.http.HttpRequest;
