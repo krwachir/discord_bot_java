@@ -33,7 +33,7 @@ import java.util.Queue;
 
 public class MusicPlayer {
 
-	private static final int INITIAL_VOL = 10;
+	private static final int INITIAL_VOL = 15;
 	private static final int MAX_ALLOWED_VOL = 20;
 
 	private static final Logger log = LoggerFactory.getLogger(MusicPlayer.class);
@@ -139,7 +139,7 @@ public class MusicPlayer {
 		GuildMusicManager musicManager = getGuildAudioPlayer(message.getGuild());
 		if (musicManager.player.isPaused() && args.size() == 0) {
 			musicManager.player.setPaused(false);
-			sendMessageToChannel(message.getChannel(), "Resumed!", "`");
+			sendMessageToChannel(message.getChannel(), ":arrow_forward: Resumed!", "`");
 			return;
 		} else {
 			String inputTxt = message.getContent().substring(message.getContent().indexOf(" "), message.getContent().length()).trim();
@@ -164,7 +164,7 @@ public class MusicPlayer {
 		
 		GuildMusicManager musicManager = getGuildAudioPlayer(message.getGuild());
 		musicManager.player.setPaused(true);
-		sendMessageToChannel(message.getChannel(), "Paused!", "`");
+		sendMessageToChannel(message.getChannel(), ":pause_button: Paused!", "`");
 	}
 
 	private void skip(MessageEvent event, List<String> args) {
@@ -182,7 +182,7 @@ public class MusicPlayer {
 		
 		GuildMusicManager musicManager = getGuildAudioPlayer(message.getGuild());
 		musicManager.scheduler.shuffle();
-		sendMessageToChannel(message.getChannel(), "Playlist Shuffled!", "`");
+		sendMessageToChannel(message.getChannel(), ":twisted_rightwards_arrows: Playlist Shuffled!", "`");
 	}
 
 	private void clearQueue(MessageEvent event, List<String> args) {
@@ -193,7 +193,7 @@ public class MusicPlayer {
 		GuildMusicManager musicManager = getGuildAudioPlayer(message.getGuild());
 		musicManager.scheduler.clearQueue();
 
-		sendMessageToChannel(message.getChannel(), "Queue Cleared!", "`");
+		sendMessageToChannel(message.getChannel(), ":arrow_heading_down: Queue Cleared!", "`");
 
 	}
 
@@ -218,7 +218,7 @@ public class MusicPlayer {
 			detailStr += "[" + (i) + "]" + "\t" + getStringTrackDetail(trackDetail);
 
 			if (i % 10 == 0) {
-				sendMessageToChannel(message.getChannel(), detailStr, "");
+				sendMessageToChannel(message.getChannel(), detailStr, "", false);
 				try {
 					Thread.sleep(100);
 				} catch (InterruptedException e) {
@@ -232,7 +232,7 @@ public class MusicPlayer {
 			i++;
 		}
 
-		sendMessageToChannel(message.getChannel(), detailStr, "");
+		sendMessageToChannel(message.getChannel(), detailStr, "", false);
 
 	}
 
@@ -260,19 +260,19 @@ public class MusicPlayer {
 
 	private void setVolume(MessageEvent event, List<String> args) {
 		IMessage message = event.getMessage();
-		if (args.size() == 2) {
+		if (args.size() == 1) {
 			try {
 				int volPercent = Integer.parseInt(args.get(0).trim());
 				GuildMusicManager musicManager = getGuildAudioPlayer(message.getGuild());
 				musicManager.player.setVolume(MAX_ALLOWED_VOL * volPercent / 100);
 
-				sendMessageToChannel(message.getChannel(), "Volume is set to " + volPercent + "%", "`");
+				sendMessageToChannel(message.getChannel(), ":signal_strength: Volume is set to " + volPercent + "%", "");
 			} catch (Exception e) {
 			}
 		}
 	}
 
-	public String getStringTrackDetail(TrackDetail trackDetail) {
+	public static String getStringTrackDetail(TrackDetail trackDetail) {
 
 		return trackDetail.audioTrack.getInfo().title + "\trequested by: "
 				+ Main.Bot.getClient().getUserByID(trackDetail.requesterLongID);
@@ -285,7 +285,7 @@ public class MusicPlayer {
 		playerManager.loadItemOrdered(musicManager, trackUrl, new AudioLoadResultHandler() {
 			@Override
 			public void trackLoaded(AudioTrack track) {
-				sendMessageToChannel(trackDetail.getTxtChannel(), "Adding to queue " + track.getInfo().title + "\t by "
+				sendMessageToChannel(trackDetail.getTxtChannel(), ":arrow_heading_up: Adding to queue " + track.getInfo().title + "\t by "
 						+ trackDetail.getGuild().getUserByID(trackDetail.requesterLongID), "");
 				play(trackDetail, musicManager, track);
 			}
@@ -294,7 +294,7 @@ public class MusicPlayer {
 			public void playlistLoaded(AudioPlaylist playlist) {
 
 				sendMessageToChannel(trackDetail.getTxtChannel(),
-						"Adding to queue " + playlist.getTracks().size() + " track(s)\tfrom playlist: "
+						":arrow_heading_up: Adding to queue " + playlist.getTracks().size() + " track(s)\tfrom playlist: "
 								+ playlist.getName() + "\t by "
 								+ trackDetail.getGuild().getUserByID(trackDetail.requesterLongID),
 						"");
@@ -332,8 +332,12 @@ public class MusicPlayer {
 	}
 
 	public static void sendMessageToChannel(IChannel channel, String message, String maskType) {
+		sendMessageToChannel(channel, message, maskType, false);
+	}
+	
+	public static void sendMessageToChannel(IChannel channel, String message, String maskType, boolean setHeader) {
 		try {
-			channel.sendMessage(":musical_note: `MusicPlayer` " + maskType + message + maskType);
+			channel.sendMessage(setHeader?(":headphones: `MusicPlayer` "):"" + maskType + message + maskType);
 		} catch (Exception e) {
 			log.warn("Failed to send message {} to {}", message, channel.getName(), e);
 		}

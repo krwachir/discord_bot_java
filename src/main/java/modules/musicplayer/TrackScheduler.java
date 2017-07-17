@@ -81,12 +81,8 @@ public class TrackScheduler extends AudioEventAdapter {
 		try {
 			IChannel txtChannel = MusicPlayer.getGuildMusicTxtChannel(trackDetail.getGuild());
 			if (txtChannel != null) {
-				txtChannel.changeTopic("Music playing > " + trackDetail.getTrack().getInfo().title);
-				// MusicPlayer.sendMessageToChannel(txtChannel,
-				// trackDetail.getTrack().getInfo().title, "'");
-			} else if (sendMessage) {
-				MusicPlayer.sendMessageToChannel(trackDetail.getTxtChannel(), trackDetail.getTrack().getInfo().title,
-						"'");
+				MusicPlayer.sendMessageToChannel(trackDetail.getTxtChannel(), ":arrow_forward: Playing: " + MusicPlayer.getStringTrackDetail(trackDetail),
+						"");
 			}
 
 		} catch (Exception e) {
@@ -97,16 +93,8 @@ public class TrackScheduler extends AudioEventAdapter {
 	public void onTrackEnd(AudioPlayer player, AudioTrack track, AudioTrackEndReason endReason) {
 		// Only start the next track if the end reason is suitable for it (FINISHED or
 		// LOAD_FAILED)
-		try {
-
-			IChannel txtChannel = MusicPlayer.getGuildMusicTxtChannel(currentTrackDetail.getGuild());
-			if (txtChannel != null) {
-				txtChannel.changeTopic("");
-				// MusicPlayer.sendMessageToChannel(txtChannel,
-				// trackDetail.getTrack().getInfo().title, "'");
-
-			}
-		} catch (Exception e) {
+		if (endReason.mayStartNext) {
+			nextTrack();
 		}
 	}
 
