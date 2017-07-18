@@ -29,11 +29,12 @@ public class CommandHandler {
             return;
 
         // Check if the first arg (the command) starts with the prefix defined in the utils class
-        if(!argArray[0].startsWith(BotUtils.BOT_PREFIX))
-            return;
+        String commandStr = argArray[0];
+        if(argArray[0].startsWith(BotUtils.BOT_PREFIX))
+        	commandStr = argArray[0].substring(1);
 
         // Extract the "command" part of the first arg out by just ditching the first character
-        String commandStr = argArray[0].substring(1);
+        
 
         // Load the rest of the args in the array into a List for safer access
         List<String> argsList = new ArrayList<>(Arrays.asList(argArray));

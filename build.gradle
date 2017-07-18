@@ -16,5 +16,8 @@ dependencies {
 	compile 'com.google.apis:google-api-services-youtube:v3-rev183-1.22.0'
 	compile group: 'com.google.oauth-client', name: 'google-oauth-client-jetty', version: '1.22.0'
 	compile group: 'commons-validator', name: 'commons-validator', version: '1.6'
+	
+	// https://mvnrepository.com/artifact/ca.pjer/chatter-bot-api
+	compile group: 'ca.pjer', name: 'chatter-bot-api', version: '2.0.1'
 }
 
