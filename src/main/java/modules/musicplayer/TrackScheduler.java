@@ -23,7 +23,7 @@ public class TrackScheduler extends AudioEventAdapter {
 	private final AudioPlayer player;
 	public Queue<AudioTrack> queue;
 	public Map<AudioTrack, TrackDetail> trackDetails;
-	private TrackDetail currentTrackDetail;
+	public TrackDetail currentTrackDetail;
 
 	/**
 	 * @param player
