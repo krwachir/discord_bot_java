@@ -273,7 +273,7 @@ public class MusicPlayer {
 		GuildMusicManager musicManager = getGuildAudioPlayer(message.getGuild());
 		if (musicManager.player.isPaused() && args.size() == 0) {
 			musicManager.player.setPaused(false);
-			sendMessageToChannel(message.getChannel(), ":arrow_forward: Resumed!", "`");
+			sendMessageToChannel(message.getChannel(), ":arrow_forward: Resumed!", "");
 			return;
 		} else {
 			String inputTxt = message.getContent()
@@ -301,7 +301,7 @@ public class MusicPlayer {
 		musicManager = getGuildAudioPlayer(message.getChannel().getGuild());
 		musicManager.scheduler.nextTrack();
 
-		sendMessageToChannel(message.getChannel(), ":stop_button:  Stopped!", "`");
+		sendMessageToChannel(message.getChannel(), ":stop_button:  Stopped!", "");
 
 	}
 
@@ -310,7 +310,7 @@ public class MusicPlayer {
 
 		GuildMusicManager musicManager = getGuildAudioPlayer(message.getGuild());
 		musicManager.player.setPaused(true);
-		sendMessageToChannel(message.getChannel(), ":pause_button: Paused!", "`");
+		sendMessageToChannel(message.getChannel(), ":pause_button: Paused!", "");
 	}
 
 	private void skip(MessageEvent event, List<String> args) {
@@ -318,7 +318,7 @@ public class MusicPlayer {
 		GuildMusicManager musicManager = getGuildAudioPlayer(message.getGuild());
 		TrackDetail trackDetail = musicManager.scheduler.currentTrackDetail;
 		if (!checkPermission(event, "dj") && !trackDetail.getRequesterLongID().equals(message.getAuthor().getLongID()))
-			sendMessageToChannel(message.getChannel(), ":x: You cannot skip other people's track unless you're a DJ!", "`");
+			sendMessageToChannel(message.getChannel(), ":x: You cannot skip other people's track unless you're a DJ!", "");
 		else
 			skipTrack(message.getChannel());
 		
@@ -329,7 +329,7 @@ public class MusicPlayer {
 
 		GuildMusicManager musicManager = getGuildAudioPlayer(message.getGuild());
 		musicManager.scheduler.shuffle();
-		sendMessageToChannel(message.getChannel(), ":twisted_rightwards_arrows: Playlist Shuffled!", "`");
+		sendMessageToChannel(message.getChannel(), ":twisted_rightwards_arrows: Playlist Shuffled!", "");
 	}
 
 	private void clearQueue(MessageEvent event, List<String> args) {
@@ -338,7 +338,7 @@ public class MusicPlayer {
 		GuildMusicManager musicManager = getGuildAudioPlayer(message.getGuild());
 		musicManager.scheduler.clearQueue();
 
-		sendMessageToChannel(message.getChannel(), ":arrow_heading_down: Queue Cleared!", "`");
+		sendMessageToChannel(message.getChannel(), ":arrow_heading_down: Queue Cleared!", "");
 
 	}
 
@@ -347,7 +347,7 @@ public class MusicPlayer {
 
 		GuildMusicManager musicManager = getGuildAudioPlayer(message.getGuild());
 		Queue<AudioTrack> AudioTracks = musicManager.scheduler.queue;
-		sendMessageToChannel(message.getChannel(), "In queue: " + AudioTracks.size() + " track(s)", "`");
+		sendMessageToChannel(message.getChannel(), "In queue: " + AudioTracks.size() + " track(s)", "");
 		try {
 			Thread.sleep(100);
 		} catch (InterruptedException e) {
