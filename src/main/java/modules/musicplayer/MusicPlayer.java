@@ -135,8 +135,6 @@ public class MusicPlayer {
 		});
 
 		CommandHandler.commandMap.put("set_music", (event, args) -> {
-			if (!isMusicTxtChannelOK(event))
-				return;
 			if (!checkPermission(event, "owner"))
 				return;
 			set(event, args);
