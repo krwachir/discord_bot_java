@@ -2,14 +2,7 @@ package Main;
 
 
 import java.io.File;
-import java.util.concurrent.CompletableFuture;
-
-import modules.chatbot.ChatBot;
-import modules.musicplayer.MusicPlayer;
 import sx.blah.discord.api.IDiscordClient;
-import sx.blah.discord.api.events.IListener;
-import sx.blah.discord.handle.impl.events.ReadyEvent;
-import sx.blah.discord.handle.impl.events.shard.DisconnectedEvent;
 import utils.PropertiesUtil;
 
 public class Bot{
@@ -20,6 +13,7 @@ public class Bot{
 	public static String USER_PATH;
 	public static String BOT_TOKEN;
 	public static String BOT_ID;
+	public static String BOT_NAME;
 	public static String BOT_AVATAR;
 	
 	public static void main(String[] args) { 
@@ -33,6 +27,7 @@ public class Bot{
 			
 		BOT_TOKEN = pUtil.get("bot_token");
 		BOT_AVATAR = pUtil.get("bot_avatar");
+		BOT_NAME = pUtil.get("bot_name");
 		
 		client = BotUtils.getBuiltDiscordClient(BOT_TOKEN);
 		client.getDispatcher().registerListener(new CommandHandler());

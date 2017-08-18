@@ -27,7 +27,6 @@ import sx.blah.discord.handle.obj.IVoiceChannel;
 import sx.blah.discord.handle.obj.IVoiceState;
 import utils.PropertiesUtil;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -77,6 +76,24 @@ public class MusicPlayer {
 			if (!checkPermission(event, "dj"))
 				return;
 			pause(event, args);
+			deleteMessage(event);
+		});
+
+		CommandHandler.commandMap.put("repeat", (event, args) -> {
+			if (!isMusicTxtChannelOK(event))
+				return;
+			if (!checkPermission(event, "dj"))
+				return;
+			repeat(event, args, true);
+			deleteMessage(event);
+		});
+
+		CommandHandler.commandMap.put("unrepeat", (event, args) -> {
+			if (!isMusicTxtChannelOK(event))
+				return;
+			if (!checkPermission(event, "dj"))
+				return;
+			repeat(event, args, false);
 			deleteMessage(event);
 		});
 
@@ -175,16 +192,14 @@ public class MusicPlayer {
 		BotUtils.sendMessage(message.getChannel(),
 				"```" + "Music Commands" + "\n For users:" + "\n  /play\tadd a song to the current queue"
 						+ "\n  /skip\tskip the current playing track if it's requested by the user"
-						+ "\n  /calldj\tmention DJs to call them for assistances" 
-						+ "\n For DJs:"
+						+ "\n  /calldj\tmention DJs to call them for assistances" + "\n For DJs:"
 						+ "\n  /play\tadd a song or a playlist (up to 20 songs), resume if pausing"
 						+ "\n  /pause\tpause the current playing track" + "\n  /skip\tskip the current playing track"
 						+ "\n  /shuffle\treorder all tracks in the queue randomly"
 						+ "\n  /clearq\tclear all tracks waitng in queue"
 						+ "\n  /stop\tend the current playing track and clear all tracks in queue"
 						+ "\n  /list or /ls\tdisplay tracks in queue"
-						+ "\n  /vol\tset the volume, up or down by percent"
-						+ "```");
+						+ "\n  /vol\tset the volume, up or down by percent" + "```");
 
 	}
 
@@ -290,6 +305,13 @@ public class MusicPlayer {
 
 	}
 
+	private void repeat(MessageEvent event, List<String> args, boolean input) {
+		IMessage message = event.getMessage();
+		GuildMusicManager musicManager = getGuildAudioPlayer(message.getGuild());
+		musicManager.scheduler.setRepeat(input);
+		sendMessageToChannel(message.getChannel(), ":repeat: Repeating is " + ((input == true) ? "ON!" : "OFF!"), "");
+	}
+
 	private void stop(MessageReceivedEvent event, List<String> args) {
 		IMessage message = event.getMessage();
 
@@ -316,10 +338,11 @@ public class MusicPlayer {
 		GuildMusicManager musicManager = getGuildAudioPlayer(message.getGuild());
 		TrackDetail trackDetail = musicManager.scheduler.currentTrackDetail;
 		if (!checkPermission(event, "dj") && !trackDetail.getRequesterLongID().equals(message.getAuthor().getLongID()))
-			sendMessageToChannel(message.getChannel(), ":x: You cannot skip other people's track unless you're a DJ!", "");
+			sendMessageToChannel(message.getChannel(), ":x: You cannot skip other people's track unless you're a DJ!",
+					"");
 		else
 			skipTrack(message.getChannel());
-		
+
 	}
 
 	private void shuffle(MessageEvent event, List<String> args) {
@@ -582,7 +605,7 @@ public class MusicPlayer {
 	protected Set<IUser> getBans(IGuild guild) {
 		return gets(guild, "music_ban");
 	}
-	
+
 	protected Set<IUser> gets(IGuild guild, String getStr) {
 		Set<IUser> users = new HashSet<>();
 
@@ -605,7 +628,8 @@ public class MusicPlayer {
 					users.add(djUser);
 				}
 
-			} catch (Exception e) {}
+			} catch (Exception e) {
+			}
 		}
 		return users;
 	}

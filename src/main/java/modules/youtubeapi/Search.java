@@ -41,7 +41,7 @@ public class Search {
 	 * Define a global variable that identifies the name of a file that contains the
 	 * developer's API key.
 	 */
-	private static final String PROPERTIES_FILENAME = "youtube.properties";
+	private static final String PROPERTIES_FILENAME = "bot.properties";
 
 	private static final long NUMBER_OF_VIDEOS_RETURNED = 1;
 
