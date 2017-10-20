@@ -7,10 +7,14 @@ repositories {
     maven {
     	url  "https://jitpack.io"
   	}
+  	
+  	flatDir {
+        dirs 'libs'
+    }
 }
 
 dependencies {
-	compile "com.github.austinv11:Discord4J:2.8.4"
+	compile "com.github.austinv11:Discord4J:2.9"
 	compile 'com.sedmelluq:lavaplayer:1.2.42'
 	compile group: 'mysql', name: 'mysql-connector-java', version: '6.0.6'
 	compile 'com.google.apis:google-api-services-youtube:v3-rev183-1.22.0'
@@ -19,5 +23,12 @@ dependencies {
 	
 	// https://mvnrepository.com/artifact/ca.pjer/chatter-bot-api
 	compile group: 'ca.pjer', name: 'chatter-bot-api', version: '2.0.1'
+	
+	// Spotify 
+	compile('se.michaelthelin.spotify:spotify-web-api-java:1.5.0') {
+        exclude group: "commons-beanutils", module: "commons-beanutils"
+
+    }
+    compile 'commons-beanutils:commons-beanutils:20030211.134440'
 }
 
